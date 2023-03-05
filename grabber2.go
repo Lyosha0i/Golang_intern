@@ -10,6 +10,7 @@ import (
 	"os"
 )
 
+// responseWrite — запись в файл ответа на GET запрос
 func responseWrite(to *string, text string, body []byte) {
 	{
 		file, err := os.Create(*to + text + ".htm") // создаём файл
@@ -40,8 +41,8 @@ func main() {
 		if err != nil {
 			log.Fatalln(err)
 		}
-
-		body, err := ioutil.ReadAll(resp.Body) //запись в файл тело ответа на GET
+		defer file.Close()
+		body, err := ioutil.ReadAll(resp.Body) //подготовка к записи тела в файл
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -50,4 +51,5 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+	file.Close()
 }
