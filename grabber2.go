@@ -8,15 +8,19 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 )
+
+// wg — глобальный sync.WaitGroup
+var wg sync.WaitGroup
 
 // responseWrite — запись в файл ответа на GET запрос
 func responseWrite(to *string, text string, body []byte) {
 	{
-		file, err := os.Create(*to + text + ".htm") // создаём файл
+		defer wg.Done()
+		file, err := os.Create(fmt.Sprintf("%s%s.htm", *to,text)) // создаём файл
 		if err != nil {                             // если возникла ошибка
 			fmt.Println("Unable to create file:", err)
-			os.Exit(1) // выходим из программы
 		}
 		defer file.Close()
 		file.Write([]byte(body))
@@ -39,17 +43,19 @@ func main() {
 	for scanner.Scan() {
 		resp, err := http.Get("https://" + scanner.Text()) //GET
 		if err != nil {
-			log.Fatalln(err)
+			fmt.Println(err)
+			continue
 		}
-		defer file.Close()
+		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body) //подготовка к записи тела в файл
 		if err != nil {
-			log.Fatalln(err)
+			fmt.Println(err)
 		}
+		wg.Add(1)//увеличение счётчика wg
 		go responseWrite(to, scanner.Text(), body) //запись в файл тело ответа на GET
 		if err := scanner.Err(); err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
 		}
 	}
-	file.Close()
+	wg.Wait()
 }
