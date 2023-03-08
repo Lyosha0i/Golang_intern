@@ -18,8 +18,8 @@ var wg sync.WaitGroup
 func responseWrite(to *string, text string, body []byte) {
 	{
 		defer wg.Done()
-		file, err := os.Create(fmt.Sprintf("%s%s.htm", *to,text)) // создаём файл
-		if err != nil {                             // если возникла ошибка
+		file, err := os.Create(fmt.Sprintf("%s%s.htm", *to, text)) // создаём файл
+		if err != nil {                                            // если возникла ошибка
 			fmt.Println("Unable to create file:", err)
 		}
 		defer file.Close()
@@ -27,7 +27,23 @@ func responseWrite(to *string, text string, body []byte) {
 		fmt.Println(text)
 	}
 }
-
+func getRequest(sc *bufio.Scanner, to *string){
+	resp, err := http.Get("https://" + sc.Text()) //GET
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body) //подготовка к записи тела в файл
+		if err != nil {
+			fmt.Println(err)
+		}
+		wg.Add(1)                                  //увеличение счётчика wg
+		go responseWrite(to, sc.Text(), body) //запись в файл тело ответа на GET
+		if err := sc.Err(); err != nil {
+			fmt.Println(err)
+		}
+}
 func main() {
 	src := flag.String("src", "/", "") //флаги
 	to := flag.String("to", "/", "")
@@ -41,21 +57,8 @@ func main() {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		resp, err := http.Get("https://" + scanner.Text()) //GET
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body) //подготовка к записи тела в файл
-		if err != nil {
-			fmt.Println(err)
-		}
-		wg.Add(1)//увеличение счётчика wg
-		go responseWrite(to, scanner.Text(), body) //запись в файл тело ответа на GET
-		if err := scanner.Err(); err != nil {
-			fmt.Println(err)
-		}
+		getRequest(scanner,to)
 	}
 	wg.Wait()
+	os.Exit(0)
 }
