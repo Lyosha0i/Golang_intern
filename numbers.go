@@ -4,7 +4,7 @@ import (
 
 	//"flag"
 
-	"bufio"
+	//"bufio"
 	"fmt"
 
 	//"io/ioutil"
@@ -19,60 +19,57 @@ import (
 // wg — глобальный sync.WaitGroup
 var wg sync.WaitGroup
 
-func generator(chA chan int, ch chan int, arr []int) {
+func generator(ch chan int) {
 	defer wg.Done()
-	rand.Seed(time.Now().UnixNano())
 	//arr := make([]int, 0, 100)
-	fmt.Println(arr)
+	//fmt.Println(arr)
 	var x int
 	//var i int
 	var min = 1
 	var max = 101
-	x = -1
-	if len(arr) < 100 {
-		x = min + rand.Intn(max-min)
-	} // for len(arr) < 100 {
-	// x = min + rand.Intn(max-min)
-	// //go isUnique(ch, arr)
+	x = min + rand.Intn(max-min)
 	ch <- x
-	for i := range arr {
-		chA <- i
-	}
-	close(ch)
-	close(chA)
-	// //wg.Add(1) //увеличение счётчика wg
-	// //bufio.NewReader(os.Stdin).ReadBytes('\n')
-	// fmt.Println(arr)
-	//}
+	//close(ch)
+	//close(chA)
 }
-func isUnique(chA chan int, ch chan int, arr []int) {
-	defer wg.Done()
-	var j int
-	for i := range chA {
-		bufio.NewReader(os.Stdin).ReadBytes('\n')
-		for j = 0; j < len(chA) && <-ch != i; j++ {
-			bufio.NewReader(os.Stdin).ReadBytes('\n')
+func isUnique(ch chan int, arr []int) []int {
+	// defer wg.Done()
+	var temp int
+	for a := range ch {
+		temp = a
+		//println(temp)
+		var i int
+		for i = 0; i < len(arr); i++ {
+			if temp != arr[i] {
+				break
+			}
+			//bufio.NewReader(os.Stdin).ReadBytes('\n')
+		}
+		if i == len(arr) {
+			arr = append(arr, temp)
+			//bufio.NewReader(os.Stdin).ReadBytes('\n')
+			fmt.Println(arr)
 		}
 	}
-	if j == len(chA) {
-		arr = append(arr, <-ch)
-		//return
-		bufio.NewReader(os.Stdin).ReadBytes('\n')
-		fmt.Println(arr)
-	} else {
-		return
-	}
+	return arr
 }
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	arr := make([]int, 0, 100)
-	intsCh := make(chan int, 100)
-	intCh := make(chan int, 1)
-	wg.Add(2) //увеличение счётчика wg
-	go generator(intsCh, intCh, arr)
-	go isUnique(intsCh, intCh, arr)
+	intCh := make(chan int, 100)
+	go isUnique(intCh, arr)
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go generator(intCh)
+		//time.Sleep(time.Millisecond*5000)
+	}
 	//sort.Ints(arr)
 	//fmt.Println(arr)
+	// close(intCh)
 	wg.Wait()
+	//close(intCh)
+	//close(intCh)
 	os.Exit(0)
 }
 
